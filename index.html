@@ -2,27 +2,17 @@
 <html lang="eng">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=.7"/>
-    <meta name="description" content="frequency links (2023). a multi-player synthesizer" />
-    <meta name="robots" content="index,follow" />
-    <meta property="og:title" content="frequency links (2023)" />
-    <meta property="og:type" content="article" />
-    <meta property="og:url"/>
-    <meta property="og:description" content="frequency links by Tommy (2023)" />
-    <meta
-      property="og:image"
-      content="https://frequency-links.vercel.app/holdinghands.png"
-    />
-    <meta name="twitter:card" content="summary" />
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/p5.sound@latest/dist/p5.sound.min.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
-    <title>frequency-links</title>
+    <title>multi-user circle drawing</title>
   </head>
   <body>
-    <div id="main">
-    </div>
+    <!-- <div id="main">
+      <input id="rotationSlider" type="range" min="0" max="360" step="1">
+      <div id="square"></div>
+    </div> -->
+    <div id="myCircle"></div>
+    <div id="otherCircle"></div>
     <script src="sketch.js"></script>
   </body>
 </html>

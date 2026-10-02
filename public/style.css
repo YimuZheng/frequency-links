@@ -51,7 +51,7 @@ button {
   font-family: sans-serif;
 }
 
-#main {
+/* #main {
   position:relative;
   display:flex;
   justify-content:center;
@@ -59,4 +59,30 @@ button {
   width:400px;
   height:400px;
   margin:25px auto 0;
+} */
+
+/* #square {
+  width: 100px;
+  height: 100px;
+  background-color: aqua;
+} */
+
+#myCircle {
+  position: absolute;
+  top: 500px;
+  left: 200px;
+  width: 150px;
+  height: 150px;
+  background-color: aqua;
+  border-radius: 50%;
+}
+
+#otherCircle {
+  position: absolute;
+  top: 500px;
+  left: 500px;
+  width: 150px;
+  height: 150px;
+  background-color: aqua;
+  border-radius: 50%;
 }

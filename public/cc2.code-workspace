@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "../../../Desktop/UXDG-720/Project-1"
+		},
+		{
+			"path": "../../../Desktop/cc-week1"
+		},
+		{
+			"path": "../../../Desktop/cc-week2"
+		},
+		{
+			"path": "../../../Desktop/cc-week3"
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "frequency-links"
+	}
+}
