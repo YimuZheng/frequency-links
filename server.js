@@ -1,90 +1,101 @@
-// 'use strict';
-
-// const socketIO = require('socket.io');
-// const express = require('express');
-// const path = require('path');
-// const app = module.exports.app = express();
-// const port = process.env.PORT || 3000;
-
-// app.get('/', function(req, res) {
-//   res.sendFile(path.join(__dirname, '/index.html'));
-// });
-
-// app.use(express.static(path.join(__dirname, 'public')));
-
-// const server = app.listen(port, () => {
-//   console.log("Listening on port: " + port);
-// });
-
-// const io = socketIO(server);
-
-// io.on('connection', (socket) => {
-//   console.log('Client connected');
-//   console.log(socket.id);
-  
-//   //receives the frequency emitter from Client
-//   socket.on("rotation", (arg) => {
-//     console.log(arg); 
-//     io.emit('freqResponse', arg);
-//   });
-
-//   //receives the name emitter from Client
-//   socket.on("name", (arg) => {
-//     //console.log(arg);
-//     io.emit('response', arg);
-//   });
-
-//   socket.on('disconnect', () => console.log('Client disconnected'));
-// });
-
 'use strict';
 
 const socketIO = require('socket.io');
 const express = require('express');
 const path = require('path');
+
 const app = module.exports.app = express();
 const port = process.env.PORT || 3000;
+
 
 app.get('/', function(req, res) {
   res.sendFile(path.join(__dirname, '/index.html'));
 });
 
+
 app.use(express.static(path.join(__dirname, 'public')));
+
 
 const server = app.listen(port, () => {
   console.log("Listening on port: " + port);
 });
 
+
 const io = socketIO(server);
 
-io.on('connection', (socket) => {
-  console.log('Client connected');
-  console.log(socket.id);
-  
-  //receives the rotation emitter from Client
-  // socket.on("rotation", (arg) => {
-  //   console.log(arg); 
-  //   io.emit('rotationResponse', arg);
-  // });
 
-  socket.on('disconnect', () => console.log('Client disconnected'));
-});
+let leftPlayer = null;
+let rightPlayer = null;
 
-// Version 1.00.00
-// express: when clients request, send them html, css, js(sketch.js) (listener to port:3000)
-// no idea what the code is...
-
-//socket.io: whole server as a socket object listening to new clients coming in(outter: io.on("connections", (socket) => {} ), receiving clients' new movements (inner: socket.on()) and send (socket.broadcast.emit()) the changes to other clients
-// io.on("connections", (socket) => {
-//   socket.on("mouseMove", mouseX, mouseY);
-//   socket.broadcast.emit("mouseMove", mouseX, mouseY);
-// })
-
-// Version 2.00.00
-// Listen to new client coming in (connection), receive their new data about their mouse coordinates, broadcast these new data to other clients
 
 io.on("connection", (socket) => {
-  socket.on("mouseMove", (x, y) => {
-    socket.broadcast.emit("mouseMove", x, y);
+  console.log("Client connected:");
+  console.log(socket.id);
+
+  let side;
+
+
+  if (leftPlayer === null) {
+    leftPlayer = socket.id;
+    side = "left";
+
+    console.log("Assigned LEFT to: " + socket.id);
+  }
+
+  else if (rightPlayer === null) {
+    rightPlayer = socket.id;
+    side = "right";
+
+    console.log("Assigned RIGHT to: " + socket.id);
+  }
+
+  else {
+    console.log("Game full: " + socket.id);
+
+    socket.emit("gameFull");
+    return;
+  }
+
+
+  socket.emit("playerAssignment", side);
+
+
+  socket.on("playerMove", (x, y) => {
+    y = Math.max(0, Math.min(1, y));
+
+    if (side === "left") {
+      x = Math.max(0, Math.min(0.5, x));
+    }
+
+    if (side === "right") {
+      x = Math.max(0.5, Math.min(1, x));
+    }
+
+    socket.broadcast.emit("playerMove", {
+      side: side,
+      x: x,
+      y: y
+    });
+  });
+
+
+  socket.on("ballMove", (x, y) => {
+    socket.broadcast.emit("ballMove", x, y);
+  });
+
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:");
+    console.log(socket.id);
+
+    if (socket.id === leftPlayer) {
+      leftPlayer = null;
+    }
+
+    if (socket.id === rightPlayer) {
+      rightPlayer = null;
+    }
+
+    socket.broadcast.emit("playerLeft", side);
   });
 });

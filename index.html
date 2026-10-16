@@ -2,17 +2,20 @@
 <html lang="eng">
   <head>
     <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
     <link rel="stylesheet" type="text/css" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
-    <title>multi-user circle drawing</title>
+    <title>Little Ball Game</title>
   </head>
+
   <body>
-    <!-- <div id="main">
-      <input id="rotationSlider" type="range" min="0" max="360" step="1">
-      <div id="square"></div>
-    </div> -->
-    <div id="myCircle"></div>
-    <div id="otherCircle"></div>
+    <div id="leftCircle"></div>
+    <div id="rightCircle"></div>
+    <div id="ball"></div>
+
     <script src="sketch.js"></script>
   </body>
 </html>
