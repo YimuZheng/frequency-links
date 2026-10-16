@@ -6,7 +6,22 @@ const path = require('path');
 
 const app = module.exports.app = express();
 const port = process.env.PORT || 3000;
+let ballPos = { x: 0.1, y: 0.5 };
+let velocity = { x:0.01, y:0.01 }
 
+
+setInterval(draw, 100)
+
+function draw() {
+  ballPos.x = ballPos.x + velocity.x;
+  ballPos.y = ballPos.y + velocity.y;
+  if (ballPos.y > 1 || ballPos.y < 0) {velocity.y = velocity.y * -1}
+  if (ballPos.x > 1 || ballPos.x < 0) {velocity.x = velocity.x * -1}
+  
+  io.emit('ballPosition', ballPos)
+  console.log('im drawing')
+  
+}
 
 app.get('/', function(req, res) {
   res.sendFile(path.join(__dirname, '/index.html'));
@@ -31,6 +46,8 @@ let rightPlayer = null;
 io.on("connection", (socket) => {
   console.log("Client connected:");
   console.log(socket.id);
+  io.to(socket.id).emit("ballMove", ballPos.x, ballPos.y);
+
 
   let side;
 
@@ -59,6 +76,11 @@ io.on("connection", (socket) => {
 
   socket.emit("playerAssignment", side);
 
+  socket.on("collided", (data) => {
+    velocity.x = velocity.x * -1;
+    velocity.y = velocity.y * -1;
+    console.log('isColliding')
+  })
 
   socket.on("playerMove", (x, y) => {
     y = Math.max(0, Math.min(1, y));

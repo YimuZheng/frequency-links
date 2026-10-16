@@ -5,11 +5,22 @@ let rightCircle = document.querySelector("#rightCircle");
 let ball = document.querySelector("#ball");
 
 let mySide = null;
-
+let ballPos = null;
 
 function moveCircle(circle, x, y) {
   circle.style.left = (x * 100) + "%";
   circle.style.top = (y * 100) + "%";
+  //check if colliding with orange circle
+  if (Math.abs(parseFloat(circle.style.left) - parseFloat(ball.style.left)) < 20 && Math.abs(parseFloat(circle.style.top) - parseFloat(ball.style.top)) < 10) {
+    socket.emit("collided", "ping")
+  }
+}
+
+setInterval(draw, 100) 
+
+function draw() {
+  //circle.ball
+  console.log(ballPos)
 }
 
 
@@ -31,25 +42,27 @@ function isColliding(circle, ball) {
   let circleRadius = circleRect.width / 2;
   let ballRadius = ballRect.width / 2;
 
+  socket.emit("collisionCheck", distance, circleRadius, ballRadius);
+
   return distance <= circleRadius + ballRadius;
 }
 
 
 function moveBall(amount) {
-  let ballRect = ball.getBoundingClientRect();
+  // let ballRect = ball.getBoundingClientRect();
 
-  let x = (ballRect.left + ballRect.width / 2) / window.innerWidth;
-  let y = (ballRect.top + ballRect.height / 2) / window.innerHeight;
+  // let x = (ballRect.left + ballRect.width / 2) / window.innerWidth;
+  // let y = (ballRect.top + ballRect.height / 2) / window.innerHeight;
 
-  x = x + amount;
+  // x = x + amount;
 
-  let ballRadiusX = (ballRect.width / 2) / window.innerWidth;
-  x = Math.max(ballRadiusX, Math.min(1 - ballRadiusX, x));
+  // let ballRadiusX = (ballRect.width / 2) / window.innerWidth;
+  // x = Math.max(ballRadiusX, Math.min(1 - ballRadiusX, x));
 
-  ball.style.left = (x * 100) + "%";
-  ball.style.top = (y * 100) + "%";
+  // ball.style.left = (x * 100) + "%";
+  // ball.style.top = (y * 100) + "%";
 
-  socket.emit("ballMove", x, y);
+  // socket.emit("ballMove", x, y);
 }
 
 
@@ -59,12 +72,20 @@ socket.on("playerAssignment", (side) => {
   console.log("I am the " + mySide + " player.");
 });
 
+socket.on("ballPosition", (ballstuff) =>{
+  console.log(ballstuff)
+  
+  ball.style.left = (ballstuff.x * 100) + "%";
+  ball.style.top = (ballstuff.y * 100) + "%";
+})
+
 
 document.addEventListener("pointermove", (e) => {
   if (mySide === null) {
     return;
   }
-
+  
+  //normalized between 0 and 1
   let x = e.clientX / window.innerWidth;
   let y = e.clientY / window.innerHeight;
 
