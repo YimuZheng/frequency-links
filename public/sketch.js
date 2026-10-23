@@ -4,186 +4,424 @@ let leftCircle = document.querySelector("#leftCircle");
 let rightCircle = document.querySelector("#rightCircle");
 let ball = document.querySelector("#ball");
 
+let leftScore = document.querySelector("#leftScore");
+let rightScore = document.querySelector("#rightScore");
+
+let leftGoal = document.querySelector("#leftGoal");
+let rightGoal = document.querySelector("#rightGoal");
+
+let rulesOverlay = document.querySelector("#rulesOverlay");
+let nameField = document.querySelector("#nameField");
+let playerNameInput = document.querySelector("#playerName");
+let rulesList = document.querySelector("#rulesList");
+let modalTitle = document.querySelector("#modalTitle");
+const modalSubtitle = document.getElementById("modalSubtitle");
+let finalScore = document.querySelector("#finalScore");
+let finalLeftScore = document.querySelector("#finalLeftScore");
+let finalRightScore = document.querySelector("#finalRightScore");
+let startButton = document.querySelector("#startButton");
+
 let mySide = null;
-let ballPos = null;
+let myX = 0.25;
+let myY = 0.5;
+
+let currentPhase = null;
+let readySent = false;
+let gameFull = false;
+
+let previousScores = null;
+let previousHitCount = null;
+let previousGoalCount = null;
+
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 
 function moveCircle(circle, x, y) {
   circle.style.left = (x * 100) + "%";
   circle.style.top = (y * 100) + "%";
-  //check if colliding with orange circle
-  if (Math.abs(parseFloat(circle.style.left) - parseFloat(ball.style.left)) < 20 && Math.abs(parseFloat(circle.style.top) - parseFloat(ball.style.top)) < 10) {
-    socket.emit("collided", "ping")
+}
+
+
+function moveBall(x, y) {
+  ball.style.left = (x * 100) + "%";
+  ball.style.top = (y * 100) + "%";
+}
+
+
+function getMyCircle() {
+  return mySide === "left" ? leftCircle : rightCircle;
+}
+
+
+function updateStartButton() {
+  if (gameFull) {
+    return;
   }
-}
 
-setInterval(draw, 100) 
+  if (readySent) {
+    startButton.disabled = true;
+    startButton.textContent = "Waiting...";
+    return;
+  }
 
-function draw() {
-  //circle.ball
-  console.log(ballPos)
-}
+  startButton.textContent =
+    currentPhase === "finished" ? "Play Again" : "Start";
 
-
-function isColliding(circle, ball) {
-  let circleRect = circle.getBoundingClientRect();
-  let ballRect = ball.getBoundingClientRect();
-
-  let circleX = circleRect.left + circleRect.width / 2;
-  let circleY = circleRect.top + circleRect.height / 2;
-
-  let ballX = ballRect.left + ballRect.width / 2;
-  let ballY = ballRect.top + ballRect.height / 2;
-
-  let dx = ballX - circleX;
-  let dy = ballY - circleY;
-
-  let distance = Math.sqrt(dx * dx + dy * dy);
-
-  let circleRadius = circleRect.width / 2;
-  let ballRadius = ballRect.width / 2;
-
-  socket.emit("collisionCheck", distance, circleRadius, ballRadius);
-
-  return distance <= circleRadius + ballRadius;
+  startButton.disabled =
+    mySide === null ||
+    playerNameInput.value.trim().length === 0;
 }
 
 
-function moveBall(amount) {
-  // let ballRect = ball.getBoundingClientRect();
+// Keep the Start button disabled until a valid name is entered.
+// This is the only input listener; duplicate listeners are unnecessary.
+playerNameInput.addEventListener("input", () => {
+  playerNameInput.classList.remove("input-error");
 
-  // let x = (ballRect.left + ballRect.width / 2) / window.innerWidth;
-  // let y = (ballRect.top + ballRect.height / 2) / window.innerHeight;
+  if (
+    (currentPhase === "waiting" || currentPhase === null) &&
+    !readySent &&
+    !gameFull
+  ) {
+    updateStartButton();
+  }
+});
 
-  // x = x + amount;
 
-  // let ballRadiusX = (ballRect.width / 2) / window.innerWidth;
-  // x = Math.max(ballRadiusX, Math.min(1 - ballRadiusX, x));
+function sendPlayerPosition() {
+  if (mySide === null) {
+    return;
+  }
 
-  // ball.style.left = (x * 100) + "%";
-  // ball.style.top = (y * 100) + "%";
-
-  // socket.emit("ballMove", x, y);
+  socket.emit("playerMove", {
+    x: myX,
+    y: myY,
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
 }
+
+
+function showRules() {
+  modalTitle.textContent = "CoLlide";
+  modalTitle.className = "modal-title";
+
+  modalSubtitle.hidden = false;
+
+  nameField.hidden = false;
+  playerNameInput.disabled = readySent;
+
+  rulesList.hidden = false;
+  finalScore.hidden = true;
+  startButton.hidden = false;
+
+  updateStartButton();
+  rulesOverlay.classList.remove("is-hidden");
+}
+
+
+function showWinner(state) {
+  const winningPlayer = state.players[state.winner];
+
+  const winnerName = winningPlayer && winningPlayer.name
+    ? winningPlayer.name
+    : (state.winner === "left" ? "Player 1" : "Player 2");
+
+  modalTitle.textContent = winnerName + " Wins 🏆";
+  modalTitle.className = state.winner === "left"
+    ? "modal-title winner-left"
+    : "modal-title winner-right";
+
+  modalSubtitle.hidden = true;
+
+  nameField.hidden = true;
+  playerNameInput.disabled = true;
+
+  rulesList.hidden = true;
+  finalScore.hidden = false;
+
+  finalLeftScore.textContent = state.scores.left;
+  finalRightScore.textContent = state.scores.right;
+
+  startButton.hidden = false;
+  startButton.disabled = false;
+  startButton.textContent = "Play Again";
+
+  rulesOverlay.classList.remove("is-hidden");
+}
+
+
+function animateScore(element) {
+  element.classList.remove("score-pop");
+  void element.offsetWidth;
+  element.classList.add("score-pop");
+}
+
+
+function flashGoal(side) {
+  const goal = side === "left" ? leftGoal : rightGoal;
+
+  goal.classList.remove("goal--scored");
+  void goal.offsetWidth;
+  goal.classList.add("goal--scored");
+
+  setTimeout(() => {
+    goal.classList.remove("goal--scored");
+  }, 700);
+}
+
+
+function flashPuck() {
+  ball.classList.remove("is-hit");
+  void ball.offsetWidth;
+  ball.classList.add("is-hit");
+}
+
+
+startButton.addEventListener("click", () => {
+  if (mySide === null || readySent || gameFull) {
+    return;
+  }
+
+  if (currentPhase !== "waiting" && currentPhase !== "finished") {
+    return;
+  }
+
+  // A rematch uses the same player's name.
+  const isRematch = currentPhase === "finished";
+  const name = playerNameInput.value
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 16);
+
+  if (!isRematch && !name) {
+    playerNameInput.classList.add("input-error");
+    playerNameInput.focus();
+    return;
+  }
+
+  readySent = true;
+
+  if (!isRematch) {
+    playerNameInput.value = name;
+    playerNameInput.disabled = true;
+  }
+
+  startButton.disabled = true;
+  startButton.textContent = "Waiting...";
+
+  socket.emit("readyToPlay", { name: name });
+});
 
 
 socket.on("playerAssignment", (side) => {
   mySide = side;
 
-  console.log("I am the " + mySide + " player.");
-});
+  myX = side === "left" ? 0.25 : 0.75;
+  myY = 0.5;
 
-socket.on("ballPosition", (ballstuff) =>{
-  console.log(ballstuff)
-  
-  ball.style.left = (ballstuff.x * 100) + "%";
-  ball.style.top = (ballstuff.y * 100) + "%";
-})
+  moveCircle(getMyCircle(), myX, myY);
+  sendPlayerPosition();
+
+  updateStartButton();
+});
 
 
 document.addEventListener("pointermove", (e) => {
-  if (mySide === null) {
+  if (mySide === null || currentPhase !== "playing") {
     return;
   }
-  
-  //normalized between 0 and 1
+
+  const circle = getMyCircle();
+  const rect = circle.getBoundingClientRect();
+
   let x = e.clientX / window.innerWidth;
   let y = e.clientY / window.innerHeight;
 
-  let radiusX = (leftCircle.offsetWidth / 2) / window.innerWidth;
-  let radiusY = (leftCircle.offsetHeight / 2) / window.innerHeight;
+  const radiusX = (rect.width / 2) / window.innerWidth;
+  const radiusY = (rect.height / 2) / window.innerHeight;
 
-  y = Math.max(radiusY, Math.min(1 - radiusY, y));
+  y = clamp(y, radiusY, 1 - radiusY);
 
   if (mySide === "left") {
-    x = Math.max(radiusX, Math.min(0.5 - radiusX, x));
+    x = clamp(x, radiusX, 0.5 - radiusX);
+  } else {
+    x = clamp(x, 0.5 + radiusX, 1 - radiusX);
+  }
 
-    moveCircle(leftCircle, x, y);
+  myX = x;
+  myY = y;
 
-    if (isColliding(leftCircle, ball)) {
-      moveBall(0.05);
+  // Immediately move the local striker for responsive controls.
+  moveCircle(circle, x, y);
+
+  // The server handles the authoritative collision calculation.
+  sendPlayerPosition();
+});
+
+
+window.addEventListener("resize", () => {
+  if (mySide === null) {
+    return;
+  }
+
+  const circle = getMyCircle();
+  const rect = circle.getBoundingClientRect();
+
+  const radiusX = (rect.width / 2) / window.innerWidth;
+  const radiusY = (rect.height / 2) / window.innerHeight;
+
+  myY = clamp(myY, radiusY, 1 - radiusY);
+
+  if (mySide === "left") {
+    myX = clamp(myX, radiusX, 0.5 - radiusX);
+  } else {
+    myX = clamp(myX, 0.5 + radiusX, 1 - radiusX);
+  }
+
+  moveCircle(circle, myX, myY);
+  sendPlayerPosition();
+});
+
+
+socket.on("gameState", (state) => {
+  if (gameFull || !state || !state.ball || !state.players) {
+    return;
+  }
+
+  const phaseChanged = state.phase !== currentPhase;
+
+  // Render the server's shared positions.
+  moveCircle(leftCircle, state.players.left.x, state.players.left.y);
+  moveCircle(rightCircle, state.players.right.x, state.players.right.y);
+  moveBall(state.ball.x, state.ball.y);
+
+  leftScore.textContent = state.scores.left;
+  rightScore.textContent = state.scores.right;
+
+  // Animate score changes.
+  if (previousScores !== null) {
+    if (state.scores.left > previousScores.left) {
+      animateScore(leftScore);
+    }
+
+    if (state.scores.right > previousScores.right) {
+      animateScore(rightScore);
     }
   }
 
-  if (mySide === "right") {
-    x = Math.max(0.5 + radiusX, Math.min(1 - radiusX, x));
+  // Animate new hits and goals only once.
+  if (
+    previousHitCount !== null &&
+    state.ball.hitCount > previousHitCount
+  ) {
+    flashPuck();
+  }
 
-    moveCircle(rightCircle, x, y);
+  if (
+    previousGoalCount !== null &&
+    state.ball.goalCount > previousGoalCount
+  ) {
+    flashGoal(state.ball.lastGoalSide);
+  }
 
-    if (isColliding(rightCircle, ball)) {
-      moveBall(-0.05);
+  previousScores = { ...state.scores };
+  previousHitCount = state.ball.hitCount;
+  previousGoalCount = state.ball.goalCount;
+
+
+  // Handle the game phase.
+  if (state.phase === "waiting") {
+    document.body.classList.remove("game-active");
+
+    if (currentPhase !== "waiting") {
+      if (
+        currentPhase === "playing" ||
+        currentPhase === "goalPause" ||
+        currentPhase === "finished"
+      ) {
+        readySent = false;
+        playerNameInput.disabled = false;
+      }
+
+      showRules();
+    }
+  } else if (
+    state.phase === "playing" ||
+    state.phase === "goalPause"
+  ) {
+    if (
+      currentPhase !== "playing" &&
+      currentPhase !== "goalPause"
+    ) {
+      readySent = false;
+      playerNameInput.disabled = true;
+    }
+
+    document.body.classList.add("game-active");
+    rulesOverlay.classList.add("is-hidden");
+  } else if (state.phase === "finished") {
+    document.body.classList.remove("game-active");
+
+    if (currentPhase !== "finished") {
+      readySent = false;
+      showWinner(state);
+    } else {
+      finalLeftScore.textContent = state.scores.left;
+      finalRightScore.textContent = state.scores.right;
     }
   }
 
-  socket.emit("playerMove", x, y);
-});
+  currentPhase = state.phase;
 
-
-socket.on("playerMove", (data) => {
-  if (data.side === "left") {
-    moveCircle(leftCircle, data.x, data.y);
-  }
-
-  if (data.side === "right") {
-    moveCircle(rightCircle, data.x, data.y);
+  // Refresh the button after a phase transition so its label reflects the
+  // new phase (for example, Start rather than Play Again after a reset).
+  if (phaseChanged) {
+    updateStartButton();
   }
 });
 
 
-socket.on("ballMove", (x, y) => {
-  ball.style.left = (x * 100) + "%";
-  ball.style.top = (y * 100) + "%";
-});
+socket.on("playerLeft", () => {
+  readySent = false;
+  playerNameInput.disabled = false;
 
-
-socket.on("playerLeft", (side) => {
-  console.log(side + " player disconnected.");
+  if (currentPhase === "waiting") {
+    showRules();
+  }
 });
 
 
 socket.on("gameFull", () => {
-  console.log("The game already has two players.");
+  gameFull = true;
+
+  modalTitle.textContent = "TABLE FULL";
+  modalTitle.className = "modal-title";
+  modalSubtitle.hidden = true;
+
+  rulesOverlay.classList.add("is-table-full");
+  nameField.hidden = true;
+  rulesList.hidden = true;
+  finalScore.hidden = true;
+  startButton.hidden = true;
+
+  document.body.classList.remove("game-active");
+  rulesOverlay.classList.remove("is-hidden");
 });
 
 
+socket.on("disconnect", () => {
+  mySide = null;
+  readySent = false;
 
+  document.body.classList.remove("game-active");
+  playerNameInput.disabled = false;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Version 1.00.00
-// client side: 1. a moving circle of their own, 
-//              2. moving circles of other clients'
-
-
-
-// funcion: draw a circle after browser notices mouse moving (p5js prewritten mousemove event?)
-// mouse = document.querySelector("#myCircle")
-// mouse.addEventListener("mousemove", () => {console.log(mouseX, mouseY)})
-// draw(background(255); circle(mouseX, mouseY, 200))
-
-// create a client side socket object
-// socket = io();
-
-// add an event listener here: when mouseMove event (event created ourselves) happens, their mouse coordinates will be emiited as new data with this event to server(emitted via socket.io)
-// socket.emit("mouseMove", mouseX, mouseY)
-
-// receive (socket.on()) other clients' mouse coordinates'data and draw circles based on these data received
-// socket.on("mouseMove" (mouseX, mouseY) => draw(background(255); circle(mouseX, mouseY, 200)))
-
-
-// Version 2.00.00
-// client side: 1.Users move their own mouse, a circle moves along with this user's mouse
-//              2.Users can see other users' moving circles
-
-// To achieve 1: Browser detects the mouse moving, get the mouse's coordinates, apply these coordinates to the circle CSS position
-
+  if (!gameFull) {
+    showRules();
+    startButton.disabled = true;
+  }
+});

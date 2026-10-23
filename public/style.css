@@ -1,41 +1,736 @@
-body {
-    margin:0;
+/* ========================================
+   CoLlide — warm charcoal palette
+   Misty lilac (left) + warm stone brown (right)
+   ======================================== */
+
+   :root {
+    color-scheme: dark;
+  
+    --player-left: #B9A9C9;
+    --player-right: #A89A91;
+    --ui-light: #EEE6DC;
+    --ui-muted: #BDB3A8;
+  
+    /* Compatibility aliases for existing code/styles */
+    --cyan: var(--player-left);
+    --coral: var(--player-right);
+    --ice: var(--ui-light);
+  }
+  
+  /* ---------- Global reset and background ---------- */
+  
+  * {
+    box-sizing: border-box;
+  }
+  
+  [hidden] {
+    display: none !important;
+  }
+  
+  html,
+  body {
     width: 100%;
-    height:100%;
+    height: 100%;
+    margin: 0;
+  }
+  
+  body {
+    position: relative;
+    isolation: isolate;
     overflow: hidden;
-    background-color: rgb(86, 86, 86);
+    touch-action: none;
+    user-select: none;
+    cursor: default;
+    background:
+      radial-gradient(
+        ellipse at 15% 50%,
+        rgba(255, 255, 255, 0.045),
+        transparent 38%
+      ),
+      radial-gradient(
+        ellipse at 85% 50%,
+        rgba(168, 154, 145, 0.055),
+        transparent 38%
+      ),
+      linear-gradient(
+        135deg,
+        #242326,
+        #111114 53%,
+        #211a1d
+      );
+  }
+  
+  body.game-active {
+    cursor: none;
+  }
+  
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    border: 1px solid rgba(238, 230, 220, 0.16);
+    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+  }
+  
+  /* ---------- Rink markings ---------- */
+  
+  .rink-markings {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  
+  .center-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    /* Keep the divider continuous from top to bottom. The old gradient
+       intentionally faded at both ends, which made the lower section vanish. */
+    background: rgba(238, 230, 220, 0.18);
+    box-shadow: 0 0 2px rgba(238, 230, 220, 0.04);
+  }
+  
+  .center-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: clamp(180px, 30vmin, 360px);
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  
+    /* Thin ring split vertically between the two player colors */
+    background: linear-gradient(
+      to right,
+      var(--player-left) 0 50%,
+      var(--player-right) 50% 100%
+    );
+    -webkit-mask: radial-gradient(
+      circle closest-side,
+      transparent calc(100% - 2px),
+      #000 calc(100% - 2px)
+    );
+    mask: radial-gradient(
+      circle closest-side,
+      transparent calc(100% - 2px),
+      #000 calc(100% - 2px)
+    );
+  }
+  
+  .center-dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(238, 230, 220, 0.42);
+    box-shadow: 0 0 8px rgba(238, 230, 220, 0.10);
+    transform: translate(-50%, -50%);
+  }
+  
+  /* ---------- Goals (net grid temporarily removed) ---------- */
+  
+  .goal {
+    position: absolute;
+    top: 50%;
+    width: clamp(58px, 7vw, 92px);
+    height: 48vh;
+    overflow: hidden;
+    transform: translateY(-50%);
+    background: rgba(20, 18, 20, 0.72);
+  }
+  
+  .goal--left {
+    left: 0;
+    border-top: 3px solid rgba(185, 169, 201, 0.78);
+    border-right: 5px solid rgba(185, 169, 201, 0.78);
+    border-bottom: 3px solid rgba(185, 169, 201, 0.78);
+    border-radius: 0 16px 16px 0;
+    background: linear-gradient(
+      90deg,
+      rgba(185, 169, 201, 0.10),
+      rgba(185, 169, 201, 0.015)
+    );
+    box-shadow:
+      inset 0 0 18px rgba(185, 169, 201, 0.10),
+      0 0 12px rgba(185, 169, 201, 0.08);
+  }
+  
+  .goal--right {
+    right: 0;
+    border-top: 3px solid rgba(168, 154, 145, 0.78);
+    border-left: 5px solid rgba(168, 154, 145, 0.78);
+    border-bottom: 3px solid rgba(168, 154, 145, 0.78);
+    border-radius: 16px 0 0 16px;
+    background: linear-gradient(
+      270deg,
+      rgba(168, 154, 145, 0.10),
+      rgba(168, 154, 145, 0.015)
+    );
+    box-shadow:
+      inset 0 0 18px rgba(168, 154, 145, 0.10),
+      0 0 12px rgba(168, 154, 145, 0.08);
+  }
+  
+  /* Hide the small glowing net marker for this visual review. */
+  .goal-net {
+    display: none;
+  }
+  
+  .goal--left.goal--scored {
+    animation: goal-flash-left 650ms ease-out;
+  }
+  
+  .goal--right.goal--scored {
+    animation: goal-flash-right 650ms ease-out;
+  }
+  
+  @keyframes goal-flash-left {
+    40% {
+      filter: brightness(2.5);
+      box-shadow: 0 0 65px rgba(185, 169, 201, 0.95);
     }
+  }
+  
+  @keyframes goal-flash-right {
+    40% {
+      filter: brightness(2.5);
+      box-shadow: 0 0 65px rgba(168, 154, 145, 0.95);
+    }
+  }
+  
+  /* ---------- Scoreboard: flush to the top edge ---------- */
+  
+  .scoreboard {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    min-width: 130px;
+    padding: 8px 22px;
+    border: 1px solid rgba(238, 230, 220, 0.13);
+    border-radius: 0 0 16px 16px;
+    background: rgba(25, 23, 23, 0.84);
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.34),
+      inset 0 1px 0 rgba(238, 230, 220, 0.035);
+    backdrop-filter: blur(10px);
+    transform: translateX(-50%);
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .score-number {
+    display: inline-block;
+    font-size: clamp(26px, 4vw, 40px);
+    font-weight: 850;
+    line-height: 1;
+  }
+  
+  .score-left {
+    color: var(--player-left);
+    text-shadow: 0 0 12px rgba(185, 169, 201, 0.18);
+  }
+  
+  .score-right {
+    color: var(--player-right);
+    text-shadow: 0 0 12px rgba(168, 154, 145, 0.18);
+  }
+  
+  .score-divider {
+    color: rgba(238, 230, 220, 0.42);
+    font-size: 24px;
+    font-weight: 400;
+  }
+  
+  .score-pop {
+    animation: score-pop 350ms ease-out;
+  }
+  
+  @keyframes score-pop {
+    40% {
+      transform: scale(1.3);
+    }
+  }
+  
+  /* ---------- Player strikers: dimensional air-hockey mallets ---------- */
+  
+  #leftCircle,
+  #rightCircle {
+    position: fixed;
+    top: 50%;
+    width: clamp(76px, 11vmin, 112px);
+    height: clamp(76px, 11vmin, 112px);
+    display: grid;
+    place-items: center;
+    border: 2px solid rgba(238, 230, 220, 0.88);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    pointer-events: none;
+    will-change: left, top;
+    isolation: isolate;
+  }
+  
+  /* Left striker — misty lilac */
+  #leftCircle {
+    left: 25%;
+    --striker-accent: var(--player-left);
+    --striker-edge: #E7DFF0;
+    --striker-face-light: #4D4058;
+    --striker-face-dark: #211B28;
+    --striker-glow: rgba(185, 169, 201, 0.23);
+  
+    background:
+      radial-gradient(
+        circle at 29% 20%,
+        rgba(255, 255, 255, 0.90) 0 4%,
+        transparent 21%
+      ),
+      linear-gradient(
+        145deg,
+        #E7DFF0 0%,
+        #B9A9C9 23%,
+        #796789 60%,
+        #302638 100%
+      );
+    box-shadow:
+      0 0 0 3px rgba(185, 169, 201, 0.13),
+      0 0 17px var(--striker-glow),
+      0 7px 18px rgba(0, 0, 0, 0.44),
+      inset 0 2px 3px rgba(255, 255, 255, 0.65),
+      inset 0 -6px 8px rgba(0, 0, 0, 0.34);
+  }
+  
+  /* Right striker — warm stone brown */
+  #rightCircle {
+    left: 75%;
+    --striker-accent: var(--player-right);
+    --striker-edge: #E5DBD4;
+    --striker-face-light: #544844;
+    --striker-face-dark: #241F1E;
+    --striker-glow: rgba(168, 154, 145, 0.23);
+  
+    background:
+      radial-gradient(
+        circle at 29% 20%,
+        rgba(255, 255, 255, 0.90) 0 4%,
+        transparent 21%
+      ),
+      linear-gradient(
+        145deg,
+        #E5DBD4 0%,
+        #A89A91 23%,
+        #756760 60%,
+        #302725 100%
+      );
+    box-shadow:
+      0 0 0 3px rgba(168, 154, 145, 0.13),
+      0 0 17px var(--striker-glow),
+      0 7px 18px rgba(0, 0, 0, 0.44),
+      inset 0 2px 3px rgba(255, 255, 255, 0.65),
+      inset 0 -6px 8px rgba(0, 0, 0, 0.34);
+  }
+  
+  /* Recessed central face */
+  #leftCircle::before,
+  #rightCircle::before {
+    content: "";
+    position: absolute;
+    inset: 15%;
+    border: 3px solid var(--striker-accent);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 33% 28%,
+      var(--striker-face-light),
+      var(--striker-face-dark) 78%
+    );
+    box-shadow:
+      inset 0 3px 6px rgba(0, 0, 0, 0.6),
+      0 0 0 2px var(--striker-glow),
+      0 2px 4px rgba(0, 0, 0, 0.4);
+  }
+  
+  /* Small raised center cap */
+  #leftCircle::after,
+  #rightCircle::after {
+    content: "";
+    position: absolute;
+    inset: 39%;
+    border: 2px solid var(--striker-edge);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 35% 28%,
+      #FFFFFF,
+      var(--striker-edge) 60%,
+      var(--striker-accent) 100%
+    );
+    box-shadow:
+      0 0 10px var(--striker-glow),
+      0 2px 4px rgba(0, 0, 0, 0.45);
+  }
+  
+  /* ---------- Puck ---------- */
+  
+  #ball {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: clamp(22px, 3vmin, 30px);
+    height: clamp(22px, 3vmin, 30px);
+    border: 2px solid rgba(238, 230, 220, 0.78);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 6;
+    pointer-events: none;
+    background: radial-gradient(
+      circle at 32% 24%,
+      #F2EDE5 0%,
+      #BDB5AA 9%,
+      #555057 24%,
+      #211F24 58%,
+      #08080A 100%
+    );
+    box-shadow:
+      0 5px 12px rgba(0, 0, 0, 0.6),
+      0 0 18px rgba(238, 230, 220, 0.12),
+      inset 0 1px 3px rgba(255, 255, 255, 0.9);
+    will-change: left, top;
+  }
+  
+  #ball::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(238, 230, 220, 0.35);
+    border-radius: 50%;
+  }
+  
+  #ball.is-hit {
+    animation: puck-hit 240ms ease-out;
+  }
+  
+  @keyframes puck-hit {
+    40% {
+      filter: brightness(1.8);
+      box-shadow: 0 0 28px rgba(238, 230, 220, 0.55);
+    }
+  }
+  
+  /* ---------- Rules and winner overlay ---------- */
+  
+  .rules-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    padding: 22px;
+    background: rgba(10, 9, 9, 0.74);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 250ms ease, visibility 250ms ease;
+  }
+  
+  .rules-overlay.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  
+  .rules-card {
+    width: min(100%, 420px);
+    padding: clamp(27px, 5vw, 40px);
+    border: 1px solid rgba(238, 230, 220, 0.14);
+    border-radius: 22px;
+    background: linear-gradient(
+      150deg,
+      rgba(39, 35, 33, 0.98),
+      rgba(19, 17, 18, 0.99)
+    );
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.54);
+  }
+  
+  .name-field {
+    margin: 0 0 27px;
+  }
+  
+  #playerName {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid rgba(238, 230, 220, 0.19);
+    border-radius: 10px;
+    outline: none;
+    color: #F3EDE4;
+    background: rgba(15, 14, 14, 0.72);
+    font: inherit;
+    font-size: 14px;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  
+  #playerName::placeholder {
+    color: #8D8379;
+  }
+  
+  #playerName:focus {
+    border-color: var(--player-left);
+    box-shadow: 0 0 0 3px rgba(185, 169, 201, 0.12);
+  }
+  
+  #playerName.input-error {
+    border-color: #D78986;
+  }
+  
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+  .modal-title {
+    display: flex;
+    margin: 0 0 30px;
+    color: #F3EDE4;
+    font-size: clamp(36px, 7vw, 48px);
+    line-height: 1;
+    font-weight: 850;
+    letter-spacing: 0.025em;
+  }
+  
+  /* Center CoLlide inside the rules panel, without changing the in-game brand. */
+  .rules-card > .modal-title {
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .modal-title.winner-left,
+  .modal-title.winner-right {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    font-size: clamp(24px, 6vw, 40px);
+    overflow-wrap: anywhere;
+  }
+  
+  .modal-title.winner-left {
+    color: var(--player-left);
+  }
+  
+  .modal-title.winner-right {
+    color: var(--player-right);
+  }
+  
+  .rules-list {
+    display: grid;
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .rule-row {
+    display: grid;
+    grid-template-columns: 82px 1fr;
+    gap: 12px;
+    /* Align the small rule labels with the first line of their descriptions. */
+    align-items: baseline;
+  }
+  
+  .rule-row strong {
+    color: var(--player-left);
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0.12em;
+    line-height: 1.55;
+  }
+  
+  .rule-row:nth-child(2) strong {
+    color: #E3D8EB;
+  }
+  
+  .rule-row:nth-child(3) strong {
+    color: var(--player-right);
+  }
+  
+  .rule-row:nth-child(4) strong {
+    color: #D8CBC4;
+  }
+  
+  .rule-row span {
+    color: #C8BFB4;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  
+  #startButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 15px 17px;
+    border: 1px solid rgba(168, 154, 145, 0.72);
+    border-radius: 11px;
+    color: #292321;
+    background: linear-gradient(135deg, #E7E0DB, #B0A098);
+    box-shadow: 0 7px 20px rgba(168, 154, 145, 0.14);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: filter 150ms ease, transform 150ms ease;
+  }
+  
+  #startButton:hover:not(:disabled) {
+    background: linear-gradient(135deg, #F2EBE6, #BEB0A8);
+    filter: brightness(1.02);
+    transform: translateY(-1px);
+  }
+  
+  #startButton:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+  
+  .final-score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin: 2px 0 30px;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  /* Special popup shown when the table is full */
+  .rules-overlay.is-table-full .rules-card {
+    display: grid;
+    place-items: center;
+    min-height: 150px;
+  }
+  
+  .rules-overlay.is-table-full .rules-card > :not(.modal-title) {
+    display: none;
+  }
+  
+  .rules-overlay.is-table-full .modal-title {
+    margin: 0;
+    text-align: center;
+  }
+  
+  /* ---------- Responsive layout and reduced motion ---------- */
+  
+  @media (max-width: 520px) {
+    .goal {
+      width: 58px;
+      height: 48vh;
+    }
+  
+    .center-circle {
+      width: 48vmin;
+    }
+  
+    .scoreboard {
+      top: 0;
+      padding: 8px 17px;
+    }
+  
+    .rules-card {
+      padding: 27px 23px;
+    }
+  
+    .rule-row {
+      grid-template-columns: 75px 1fr;
+      gap: 10px;
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  
+  /* ---------- Game title: CoLlide ---------- */
+  
+  .game-brand {
+    position: fixed;
+    top: 22px;
+    left: 26px;
+    z-index: 9;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    color: var(--ui-light);
+    font-size: clamp(16px, 1.6vw, 21px);
+    font-weight: 850;
+    letter-spacing: 0.10em;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+  
+  /* Keep the whole game name in one soft off-white color */
+  .game-brand .brand-left,
+  .game-brand .brand-right {
+    color: var(--ui-light);
+  }
+  
+  /* Ensure no old decorative bullet appears before the name */
+  .game-brand::before {
+    content: none !important;
+    display: none !important;
+  }
+  
+  @media (max-width: 520px) {
+    .game-brand {
+      top: 15px;
+      left: 14px;
+      font-size: 14px;
+      letter-spacing: 0.07em;
+    }
+  }
+  
+  #modalTitle:not(.winner-left):not(.winner-right) {
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin-bottom: 6px;
+  }
 
-
-#leftCircle {
-  position: fixed;
-  top: 50%;
-  left: 25%;
-  width: 120px;
-  height: 120px;
-  background-color: aqua;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+  .modal-subtitle {
+  margin: 0 0 24px;
+  color: rgba(238, 230, 220, 0.64);
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  font-size: clamp(12px, 2.2vw, 14px);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+  text-align: center;
 }
 
-#rightCircle {
-  position: fixed;
-  top: 50%;
-  left: 75%;
-  width: 120px;
-  height: 120px;
-  background-color: aqua;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-#ball {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  background-color: rgb(255, 123, 0);
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
+#modalSubtitle[hidden] {
+  display: none !important;
+} 

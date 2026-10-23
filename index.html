@@ -1,21 +1,111 @@
 <!DOCTYPE html>
-<html lang="eng">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <script src="/socket.io/socket.io.js"></script>
-    <title>Little Ball Game</title>
-  </head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/style.css">
+  <title>CoLlide</title>
+</head>
 
-  <body>
-    <div id="leftCircle"></div>
-    <div id="rightCircle"></div>
-    <div id="ball"></div>
+<body>
+  <div class="game-brand">
+    <span class="brand-left">Co</span><span class="brand-right">Llide</span>
+  </div>
+  <div class="rink-markings" aria-hidden="true">
+    <div class="center-line"></div>
+    <div class="center-circle"></div>
+    <div class="center-dot"></div>
 
-    <script src="sketch.js"></script>
-  </body>
+    <div class="goal goal--left" id="leftGoal">
+      <div class="goal-net"></div>
+    </div>
+
+    <div class="goal goal--right" id="rightGoal">
+      <div class="goal-net"></div>
+    </div>
+  </div>
+
+  <!-- Scoreboard -->
+  <div class="scoreboard" aria-label="Score">
+    <span class="score-number score-left" id="leftScore">0</span>
+    <span class="score-divider">:</span>
+    <span class="score-number score-right" id="rightScore">0</span>
+  </div>
+
+  <!-- Players and puck -->
+  <div id="leftCircle" aria-label="Left player striker"></div>
+  <div id="rightCircle" aria-label="Right player striker"></div>
+  <div id="ball" aria-label="Puck"></div>
+
+  <!-- Rules and start screen -->
+  <div
+    class="rules-overlay"
+    id="rulesOverlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
+  >
+    <div class="rules-card">
+      <h1 class="modal-title" id="modalTitle">CoLlide</h1>
+      <p class="modal-subtitle" id="modalSubtitle">
+        Air hockey, right in your browser.
+      </p>
+      <!-- Game rules -->
+      <div class="rules-list" id="rulesList">
+        <div class="rule-row">
+          <strong>MOVE</strong>
+          <span>Move your striker with your pointer</span>
+        </div>
+
+        <div class="rule-row">
+          <strong>HIT</strong>
+          <span>Hit the puck toward your opponent's goal</span>
+        </div>
+
+        <div class="rule-row">
+          <strong>DEFEND</strong>
+          <span>Keep the puck out of your goal</span>
+        </div>
+
+        <div class="rule-row">
+          <strong>WIN</strong>
+          <span>First to 5 points wins</span>
+        </div>
+    </div>
+
+      <!-- Player name input -->
+      <div class="name-field" id="nameField">
+        <label class="visually-hidden" for="playerName">
+          Your name
+        </label>
+
+        <input
+          id="playerName"
+          type="text"
+          maxlength="16"
+          autocomplete="nickname"
+          placeholder="Your name"
+          required
+        >
+      </div>
+
+      <!-- Final score: shown when a player wins -->
+      <div class="final-score" id="finalScore" hidden>
+        <span class="score-number score-left" id="finalLeftScore">0</span>
+        <span class="score-divider">:</span>
+        <span class="score-number score-right" id="finalRightScore">0</span>
+      </div>
+
+      <!-- Start / Play Again -->
+      <button id="startButton" type="button" disabled>
+        Start
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Load Socket.IO before the client game code -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/sketch.js"></script>
+</body>
 </html>
